@@ -6,7 +6,7 @@ rendered in PlayStation 1 style. See [DESIGN.md](DESIGN.md) for the vision and d
 **Status:** Slice 1 "The Engine": one locomotive on a straight test track with rolling grades.
 
 ![Cab view at 72 mph](docs/images/slice1_cab.png)
-![Leaning out of the cab](docs/images/slice1_leaning_out.png)
+![Approaching a stop](docs/images/slice1_stop_approach.png)
 
 ## Requirements
 
@@ -27,7 +27,11 @@ You start cold: brakes on, low fire, 45 psi.
 4. **Open the regulator** (brass knob) gently.
 5. Once rolling, **notch the reverser back** toward 25-35% cut-off. Long cut-off at speed empties the boiler fast; short cut-off is efficient.
 6. **Keep the fire and water up.** Use the injector (blue) to add water; it only works with pressure. Don't let the water glass empty over a hot fire.
-7. **Stop at the red stop boards.** The brakes lag, so plan ahead. The HUD tells you how close you got.
+7. **Stop at the red stop boards.** Countdown boards stand 600 / 400 / 200 m before each stop (3, 2, 1 black bars),
+   and a platform leads up to it. From full speed, start braking (Service) at the 3-bar board. The brakes lag,
+   so plan ahead. The HUD tells you how close you got.
+
+The **driver's notes** panel (top right, `H`) walks you through all of this and ticks steps off as you do them.
 
 | Input | Action |
 |---|---|
@@ -35,7 +39,9 @@ You start cold: brakes on, low fire, 45 psi.
 | Left-click firebox door / `F` | Fire a shovelful of coal |
 | Hold `E` | Lean out of the side window to see past the boiler |
 | Right-drag | Look around |
+| `H` | Toggle driver's notes |
 | `F3` | Toggle dev readout |
+| `F11` | Fullscreen |
 
 ## Project layout
 

@@ -9,8 +9,9 @@ namespace LastTrain.Render;
 /// </summary>
 public static class Ps1Materials
 {
-    static Shader? _surface;
+    static Shader? _surface, _sign;
     static Shader Surface => _surface ??= GD.Load<Shader>("res://shaders/ps1_surface.gdshader");
+    static Shader SignShader => _sign ??= GD.Load<Shader>("res://shaders/ps1_sign.gdshader");
 
     public static ShaderMaterial Solid(Color color, float affine = 0.6f, float snap = 1f)
     {
@@ -48,6 +49,45 @@ public static class Ps1Materials
         m.SetShaderParameter("emission_color", color);
         m.SetShaderParameter("emission_energy", energy);
         return m;
+    }
+
+    /// <summary>Lineside sign: ignores fog and glows with its texture, so the driver can read it from afar.</summary>
+    public static ShaderMaterial PaintedSign(Texture2D texture, float glow)
+    {
+        var m = Textured(texture, Colors.White, Vector2.One, affine: 0.2f);
+        m.Shader = SignShader;
+        m.SetShaderParameter("emission_color", Colors.White);
+        m.SetShaderParameter("emission_energy", glow);
+        m.SetShaderParameter("emission_textured", true);
+        return m;
+    }
+
+    /// <summary>Solid-colour lineside sign or lamp that ignores fog.</summary>
+    public static ShaderMaterial SignGlow(Color color, float energy)
+    {
+        var m = Glow(color, energy);
+        m.Shader = SignShader;
+        return m;
+    }
+
+    /// <summary>White board with N black bars: railway countdown marker (3 = furthest from the stop).</summary>
+    public static ImageTexture CountdownBars(int bars)
+    {
+        const int w = 16, h = 32;
+        var img = Image.CreateEmpty(w, h, false, Image.Format.Rgb8);
+        img.Fill(new Color(0.92f, 0.9f, 0.84f));
+        int band = h / 7;
+        for (int i = 0; i < bars; i++)
+        {
+            int y0 = band * (1 + i * 2);
+            for (int y = y0; y < y0 + band; y++)
+            for (int x = 0; x < w; x++)
+                img.SetPixel(x, y, new Color(0.06f, 0.06f, 0.06f));
+        }
+        // Thin dark border so the board edge reads at low resolution.
+        for (int x = 0; x < w; x++) { img.SetPixel(x, 0, Colors.Black); img.SetPixel(x, h - 1, Colors.Black); }
+        for (int y = 0; y < h; y++) { img.SetPixel(0, y, Colors.Black); img.SetPixel(w - 1, y, Colors.Black); }
+        return ImageTexture.CreateFromImage(img);
     }
 
     /// <summary>Two-tone speckle, the cheapest possible "texture".</summary>

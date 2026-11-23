@@ -24,8 +24,6 @@ namespace LastTrain;
 /// </summary>
 public partial class Main : Node
 {
-    const int PixelShrink = 4; // 1280x960 window -> 320x240 render
-
     readonly TrackProfile _profile = new();
     LocomotiveSim _sim = null!;
     SubViewport _viewport = null!;
@@ -42,7 +40,7 @@ public partial class Main : Node
             new Boiler(pressureBar: 3.0, waterLevel: 0.7, fireBed: 0.2),
             new AirBrake(AirBrake.Service, AirBrake.Service));
 
-        _viewport = Ps1Pipeline.Create(this, PixelShrink);
+        _viewport = Ps1Pipeline.Create(this);
         var world = new Node3D { Name = "World" };
         _viewport.AddChild(world);
         Ps1Pipeline.AddEnvironment(world);
@@ -73,6 +71,11 @@ public partial class Main : Node
             {
                 case Key.F: _sim.Shovel(); break;
                 case Key.F3: _hud.ShowReadout = !_hud.ShowReadout; break;
+                case Key.H: _hud.ShowNotes = !_hud.ShowNotes; break;
+                case Key.F11:
+                    DisplayServer.WindowSetMode(DisplayServer.WindowGetMode() == DisplayServer.WindowMode.Fullscreen
+                        ? DisplayServer.WindowMode.Windowed : DisplayServer.WindowMode.Fullscreen);
+                    break;
             }
         }
     }

@@ -21,6 +21,7 @@ public partial class AutoShot : Node
     CabRig _cab = null!;
     CabInput _input = null!;
     Main _main = null!;
+    readonly TrackProfile _profile = new();
     int _frame;
     readonly Queue<(int frame, Action action)> _steps = new();
 
@@ -49,6 +50,11 @@ public partial class AutoShot : Node
         _steps.Enqueue((f += 40, () => Save("04_leaning_out")));
         _steps.Enqueue((f += 5, () => { _input.ForceLean = false; Look(-8, -75); }));
         _steps.Enqueue((f += 30, () => Save("05_side_view")));
+        // Approach the next stop: the 3-bar countdown board, then the platform and stop board.
+        _steps.Enqueue((f += 5, () => { _input.ForceLean = true; Look(-4, 0); RunUntil(_profile.NextStopBoard(_sim.DistanceM + 800) - 690); _cab.Camera.Position = CabInput.LeanPosition; }));
+        _steps.Enqueue((f += 40, () => Save("06_countdown_three")));
+        _steps.Enqueue((f += 5, () => { Engine.TimeScale = 1; RunUntil(_profile.NextStopBoard(_sim.DistanceM) - 90); _cab.Camera.Position = CabInput.LeanPosition; }));
+        _steps.Enqueue((f += 40, () => Save("07_platform_and_stop_board")));
         _steps.Enqueue((f += 5, () => GetTree().Quit()));
     }
 
@@ -78,6 +84,20 @@ public partial class AutoShot : Node
             _sim.Step(dt, 0);
         }
         _main.SnapVisualsTo(_sim.DistanceM);
+    }
+
+    /// <summary>Keep driving (instantly) until the train reaches track position s.</summary>
+    void RunUntil(double s)
+    {
+        const double dt = 1.0 / 60.0;
+        for (int i = 0; i < 60 * 600 && _sim.DistanceM < s; i++)
+        {
+            if (_sim.Boiler.FireBed < 0.85) _sim.Shovel();
+            _sim.Step(dt, _profile.GradeAt(_sim.DistanceM));
+        }
+        _main.SnapVisualsTo(_sim.DistanceM);
+        // Software rendering is slow; without this, physics catches up and overshoots before the shot.
+        Engine.TimeScale = 0;
     }
 
     void Save(string name)

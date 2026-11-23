@@ -15,8 +15,28 @@ public partial class DevHud : CanvasLayer
     TrackProfile _profile = null!;
     Label _readout = null!;
     Label _hint = null!;
+    Label _notes = null!;
+    readonly bool[] _done = new bool[DriverNotes.Length];
 
     public bool ShowReadout { get; set; } = true;
+    public bool ShowNotes { get; set; } = true;
+
+    /// <summary>
+    /// How to drive, as a self-ticking checklist. The first steps latch once done;
+    /// the "keep" steps are live. Check functions get (sim, profile).
+    /// </summary>
+    static readonly (string text, bool latches, Func<LocomotiveSim, TrackProfile, bool> check)[] DriverNotes =
+    {
+        ("Raise steam: fire (F / firebox door) to ~180 psi", true, (s, _) => s.Boiler.PressureBar * 14.5 >= 180),
+        ("Reverser fully forward (long cut-off to start)", true, (s, _) => s.Reverser > 0.8 || s.SpeedMs > 3),
+        ("Release the brake (red lever all the way back)", true, (s, _) => s.BrakeHandle <= 0.001),
+        ("Open the regulator gently (brass knob)", true, (s, _) => s.Regulator > 0.05),
+        ("Past 20 mph: notch reverser back to 25-35%", true, (s, _) => s.SpeedMs * 2.237 > 20 && s.Cutoff > 0.18 && s.Cutoff < 0.4),
+        ("Keep the water glass half full (injector)", false, (s, _) => s.Boiler.WaterLevel is > 0.4 and < 0.92),
+        ("Keep the fire bright: little and often", false, (s, _) => s.Boiler.FireBed > 0.5),
+        ("Stop at the red board. From full speed,\n    brake at the 3-bar board", true,
+            (s, p) => s.SpeedMs == 0 && Math.Abs(s.DistanceM - p.NearestStopBoard(s.DistanceM)) * 3.28 < 40),
+    };
 
     public DevHud Init(LocomotiveSim sim, TrackProfile profile)
     {
@@ -37,6 +57,18 @@ public partial class DevHud : CanvasLayer
         _readout.AddThemeConstantOverride("shadow_offset_y", 2);
         AddChild(_readout);
 
+        _notes = new Label();
+        _notes.AddThemeFontSizeOverride("font_size", 17);
+        _notes.AddThemeColorOverride("font_color", new Color(0.95f, 0.9f, 0.75f));
+        _notes.AddThemeColorOverride("font_shadow_color", Colors.Black);
+        _notes.AddThemeConstantOverride("shadow_offset_x", 2);
+        _notes.AddThemeConstantOverride("shadow_offset_y", 2);
+        AddChild(_notes);
+        _notes.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight);
+        _notes.GrowHorizontal = Control.GrowDirection.Begin;
+        _notes.OffsetRight = -14;
+        _notes.OffsetTop = 10;
+
         _hint = new Label { HorizontalAlignment = HorizontalAlignment.Center };
         _hint.AddThemeFontSizeOverride("font_size", 20);
         _hint.AddThemeColorOverride("font_color", new Color(1f, 0.95f, 0.8f));
@@ -54,6 +86,7 @@ public partial class DevHud : CanvasLayer
 
     public override void _Process(double delta)
     {
+        UpdateNotes();
         _readout.Visible = ShowReadout;
         if (!ShowReadout) return;
 
@@ -90,7 +123,22 @@ public partial class DevHud : CanvasLayer
         }
 
         sb.AppendLine();
-        sb.Append("F fire   hold E lean out   LMB drag levers   RMB look   F3 hide");
+        sb.Append("F fire   hold E lean out   LMB drag levers   RMB look\nH driver's notes   F3 hide this   F11 fullscreen");
         _readout.Text = sb.ToString();
+    }
+
+    void UpdateNotes()
+    {
+        _notes.Visible = ShowNotes;
+        if (!ShowNotes) return;
+        var sb = new StringBuilder("DRIVER'S NOTES  (H to hide)\n\n");
+        for (int i = 0; i < DriverNotes.Length; i++)
+        {
+            var (text, latches, check) = DriverNotes[i];
+            bool ok = check(_sim, _profile);
+            if (latches) { _done[i] |= ok; ok = _done[i]; }
+            sb.Append(ok ? "[x] " : "[ ] ").AppendLine(text);
+        }
+        _notes.Text = sb.ToString();
     }
 }

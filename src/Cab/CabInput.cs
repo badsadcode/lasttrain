@@ -28,7 +28,7 @@ public partial class CabInput : Node
     float _pitch = -15f;
 
     /// <summary>Head position when leaning out of the right-hand side window.</summary>
-    static readonly Vector3 LeanPosition = new(1.85f, 3.2f, -0.45f);
+    public static readonly Vector3 LeanPosition = new(1.85f, 3.2f, -0.45f);
 
     public string HoverText { get; private set; } = "";
     /// <summary>For tools: lean out without a key held.</summary>

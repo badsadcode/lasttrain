@@ -33,7 +33,8 @@ public partial class TrackScroller : Node3D
     readonly FastNoiseLite _patches = new() { Seed = 1931, Frequency = 0.05f };
 
     MultiMesh _sleepers = null!, _railL = null!, _railR = null!, _ballast = null!;
-    MultiMesh _poles = null!, _arms = null!, _boardPosts = null!, _boards = null!;
+    MultiMesh _poles = null!, _arms = null!;
+    StopMarkers _markers = null!;
     ScatterLayer _trees = null!, _clutter = null!, _grass = null!;
     MeshInstance3D _ground = null!;
     ShaderMaterial _groundMaterial = null!;
@@ -61,7 +62,6 @@ public partial class TrackScroller : Node3D
         var ballast = Ps1Materials.Textured(Ps1Materials.Speckle(16, new Color(0.42f, 0.4f, 0.37f), new Color(0.27f, 0.26f, 0.25f), 3),
                                             Colors.White, new Vector2(4, 4), affine: 0.3f);
         var pole = Ps1Materials.Solid(new Color(0.3f, 0.23f, 0.17f));
-        var board = Ps1Materials.Solid(new Color(0.75f, 0.14f, 0.1f));
 
         _sleepers = AddMulti("Sleepers", new BoxMesh { Size = new Vector3(2.6f, 0.16f, 0.24f) }, wood, sleeperCount);
         _railL = AddMulti("RailL", new BoxMesh { Size = new Vector3(0.08f, 0.17f, SegmentLength + 0.02f) }, iron, segmentCount);
@@ -69,8 +69,8 @@ public partial class TrackScroller : Node3D
         _ballast = AddMulti("Ballast", new BoxMesh { Size = new Vector3(3.6f, 0.45f, SegmentLength + 0.02f) }, ballast, segmentCount);
         _poles = AddMulti("Poles", new BoxMesh { Size = new Vector3(0.22f, 7.5f, 0.22f) }, pole, poleCount);
         _arms = AddMulti("Crossarms", new BoxMesh { Size = new Vector3(1.6f, 0.12f, 0.12f) }, pole, poleCount);
-        _boardPosts = AddMulti("StopBoardPosts", new BoxMesh { Size = new Vector3(0.12f, 2.4f, 0.12f) }, pole, 3);
-        _boards = AddMulti("StopBoards", new BoxMesh { Size = new Vector3(0.9f, 0.6f, 0.06f) }, board, 3);
+        _markers = new StopMarkers().Init(_profile, GroundHeight);
+        AddChild(_markers);
         // Quaternius "Ultimate Nature" models (CC0). Mostly pines; one in five trees is dead,
         // because something out here is wrong.
         Mesh M(string file, float height) => ModelLoader.LoadPs1Mesh(Nature + file, height);
@@ -166,15 +166,7 @@ public partial class TrackScroller : Node3D
             _arms.SetInstanceTransform(i, Upright(ps, -4.5f, ground + 6.9f));
         }
 
-        int boards = 0;
-        for (double b = _profile.NextStopBoard(Math.Max(0, start)); b < s + Ahead && boards < _boards.InstanceCount; b += _profile.StopBoardSpacingM)
-        {
-            _boardPosts.SetInstanceTransform(boards, Upright(b, 2.4f, 0.6f));
-            _boards.SetInstanceTransform(boards, Upright(b, 2.4f, 1.75f));
-            boards++;
-        }
-        _boardPosts.VisibleInstanceCount = boards;
-        _boards.VisibleInstanceCount = boards;
+        _markers.Rebuild(start, s + Ahead);
     }
 
     // --- Ground and trees -------------------------------------------------------
