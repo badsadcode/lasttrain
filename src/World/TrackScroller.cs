@@ -24,8 +24,8 @@ public partial class TrackScroller : Node3D
     const float PoleSpacing = 50f;
     const float GroundCell = 6f;
     const float GroundHalfWidth = 132f;
-    const float TreeCell = 10f;
-    const int TreesPerCellSide = 3;
+    const float ScatterCell = 10f;
+    const string Nature = "res://assets/quaternius/nature/";
     const float RailGaugeHalf = 0.7175f; // standard gauge 1435 mm
 
     TrackProfile _profile = new();
@@ -34,7 +34,7 @@ public partial class TrackScroller : Node3D
 
     MultiMesh _sleepers = null!, _railL = null!, _railR = null!, _ballast = null!;
     MultiMesh _poles = null!, _arms = null!, _boardPosts = null!, _boards = null!;
-    MultiMesh _trunks = null!, _canopies = null!;
+    ScatterLayer _trees = null!, _clutter = null!, _grass = null!;
     MeshInstance3D _ground = null!;
     ShaderMaterial _groundMaterial = null!;
 
@@ -53,7 +53,7 @@ public partial class TrackScroller : Node3D
         int sleeperCount = (int)((Behind + Ahead) / SleeperSpacing) + 2;
         int segmentCount = (int)((Behind + Ahead) / SegmentLength) + 2;
         int poleCount = (int)((Behind + Ahead) / PoleSpacing) + 2;
-        int treeCount = ((int)((Behind + Ahead) / TreeCell) + 2) * TreesPerCellSide * 2;
+        int cells = (int)((Behind + Ahead) / ScatterCell) + 2;
 
         var iron = Ps1Materials.Solid(new Color(0.33f, 0.3f, 0.28f), affine: 0.2f);
         var wood = Ps1Materials.Textured(Ps1Materials.Planks(16, new Color(0.32f, 0.24f, 0.17f), 7),
@@ -62,8 +62,6 @@ public partial class TrackScroller : Node3D
                                             Colors.White, new Vector2(4, 4), affine: 0.3f);
         var pole = Ps1Materials.Solid(new Color(0.3f, 0.23f, 0.17f));
         var board = Ps1Materials.Solid(new Color(0.75f, 0.14f, 0.1f));
-        var bark = Ps1Materials.Solid(new Color(0.22f, 0.18f, 0.15f));
-        var leaves = Ps1Materials.Solid(new Color(0.17f, 0.24f, 0.15f));
 
         _sleepers = AddMulti("Sleepers", new BoxMesh { Size = new Vector3(2.6f, 0.16f, 0.24f) }, wood, sleeperCount);
         _railL = AddMulti("RailL", new BoxMesh { Size = new Vector3(0.08f, 0.17f, SegmentLength + 0.02f) }, iron, segmentCount);
@@ -73,8 +71,24 @@ public partial class TrackScroller : Node3D
         _arms = AddMulti("Crossarms", new BoxMesh { Size = new Vector3(1.6f, 0.12f, 0.12f) }, pole, poleCount);
         _boardPosts = AddMulti("StopBoardPosts", new BoxMesh { Size = new Vector3(0.12f, 2.4f, 0.12f) }, pole, 3);
         _boards = AddMulti("StopBoards", new BoxMesh { Size = new Vector3(0.9f, 0.6f, 0.06f) }, board, 3);
-        _trunks = AddMulti("Trunks", new CylinderMesh { TopRadius = 0.15f, BottomRadius = 0.3f, Height = 3f, RadialSegments = 5, Rings = 0 }, bark, treeCount);
-        _canopies = AddMulti("Canopies", new CylinderMesh { TopRadius = 0f, BottomRadius = 2.2f, Height = 6f, RadialSegments = 6, Rings = 0 }, leaves, treeCount);
+        // Quaternius "Ultimate Nature" models (CC0). Mostly pines; one in five trees is dead,
+        // because something out here is wrong.
+        Mesh M(string file, float height) => ModelLoader.LoadPs1Mesh(Nature + file, height);
+        _trees = new ScatterLayer(this, "Trees", new (Mesh, float)[]
+        {
+            (M("PineTree_1.fbx", 12f), 0.16f), (M("PineTree_2.fbx", 11f), 0.16f),
+            (M("PineTree_3.fbx", 13f), 0.14f), (M("PineTree_5.fbx", 10f), 0.14f),
+            (M("CommonTree_1.fbx", 9f), 0.1f), (M("CommonTree_2.fbx", 8f), 0.1f),
+            (M("CommonTree_Dead_1.fbx", 9f), 0.05f), (M("CommonTree_Dead_2.fbx", 8f), 0.05f),
+            (M("BirchTree_Dead_1.fbx", 10f), 0.05f), (M("Willow_Dead_1.fbx", 8f), 0.05f),
+        }, cells * 6);
+        _clutter = new ScatterLayer(this, "Clutter", new (Mesh, float)[]
+        {
+            (M("Rock_1.fbx", 1.0f), 0.18f), (M("Rock_2.fbx", 0.8f), 0.18f), (M("Rock_3.fbx", 1.2f), 0.14f),
+            (M("Rock_Moss_1.fbx", 1.0f), 0.1f), (M("Bush_1.fbx", 1.3f), 0.15f), (M("Bush_2.fbx", 1.1f), 0.1f),
+            (M("TreeStump.fbx", 0.7f), 0.08f), (M("WoodLog.fbx", 0.5f), 0.07f),
+        }, cells * 4);
+        _grass = new ScatterLayer(this, "Grass", new (Mesh, float)[] { (M("Grass.fbx", 0.6f), 1f) }, cells * 14);
 
         var grass = Ps1Materials.Speckle(32, new Color(0.62f, 0.6f, 0.45f), new Color(0.45f, 0.42f, 0.32f), 11, 0.4f);
         _groundMaterial = Ps1Materials.Ground(grass, 0.25f);
@@ -109,7 +123,7 @@ public partial class TrackScroller : Node3D
         {
             _lastGroundIndex = groundIndex;
             RebuildGround(groundIndex * GroundCell);
-            RebuildTrees(s);
+            RebuildScatter(s);
         }
     }
 
@@ -211,32 +225,34 @@ public partial class TrackScroller : Node3D
         _ground.Mesh = st.Commit();
     }
 
-    void RebuildTrees(double s)
+    void RebuildScatter(double s)
     {
-        double start = Math.Floor((s - Behind) / TreeCell) * TreeCell;
-        int i = 0;
-        int max = _trunks.InstanceCount;
-        for (double cell = start; i < max; cell += TreeCell)
+        _trees.Begin(); _clutter.Begin(); _grass.Begin();
+        double start = Math.Floor((s - Behind) / ScatterCell) * ScatterCell;
+        for (double cell = start; cell < s + Ahead; cell += ScatterCell)
         {
-            long cellId = (long)Math.Round(cell / TreeCell);
-            for (int side = -1; side <= 1 && i < max; side += 2)
-            for (int k = 0; k < TreesPerCellSide && i < max; k++, i++)
+            long cellId = (long)Math.Round(cell / ScatterCell);
+            for (int side = -1; side <= 1; side += 2)
             {
-                var rng = new Random(Hash(cellId, side, k));
-                float x = side * (9f + (float)rng.NextDouble() * 70f);
-                double ts = cell + rng.NextDouble() * TreeCell;
-                float y = GroundHeight(x, ts);
-                bool dead = rng.NextDouble() < 0.2;   // a few dead trees: something is wrong out here
-                float scale = 0.7f + (float)rng.NextDouble() * 0.8f;
-                float yaw = (float)rng.NextDouble() * Mathf.Tau;
-                var basis = new Basis(Vector3.Up, yaw).Scaled(new Vector3(scale, scale * (dead ? 1.8f : 1f), scale));
-                var pos = new Vector3(x, y, (float)-ts);
-                _trunks.SetInstanceTransform(i, new Transform3D(basis, pos + basis * new Vector3(0, 1.5f, 0)));
-                _canopies.SetInstanceTransform(i, dead
-                    ? new Transform3D(Basis.Identity.Scaled(Vector3.One * 0.001f), pos)
-                    : new Transform3D(basis, pos + basis * new Vector3(0, 5.5f, 0)));
+                // Same cell always gives the same layout, so scenery doesn't reshuffle as it scrolls.
+                var rng = new Random(Hash(cellId, side, 0));
+                for (int k = 0; k < 3; k++) _trees.Add(rng, Place(rng, cell, side, 9f, 80f, 0.75f, 1.35f));
+                for (int k = 0; k < 2; k++) _clutter.Add(rng, Place(rng, cell, side, 3.5f, 45f, 0.6f, 2.2f));
+                for (int k = 0; k < 7; k++) _grass.Add(rng, Place(rng, cell, side, 2.4f, 22f, 0.7f, 1.5f));
             }
         }
+        _trees.End(); _clutter.End(); _grass.End();
+    }
+
+    /// <summary>Random spot on one side of the track within a scatter cell, sitting on the ground, random yaw and scale.</summary>
+    Transform3D Place(Random rng, double cell, int side, float minX, float maxX, float minScale, float maxScale)
+    {
+        float x = side * (minX + (float)rng.NextDouble() * (maxX - minX));
+        double ps = cell + rng.NextDouble() * ScatterCell;
+        float scale = minScale + (float)rng.NextDouble() * (maxScale - minScale);
+        var basis = new Basis(Vector3.Up, (float)rng.NextDouble() * Mathf.Tau).Scaled(Vector3.One * scale);
+        // Sink slightly so slopes don't leave models floating.
+        return new Transform3D(basis, new Vector3(x, GroundHeight(x, ps) - 0.1f * scale, (float)-ps));
     }
 
     static int Hash(long a, int b, int c)

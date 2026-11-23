@@ -41,7 +41,7 @@ You start cold: brakes on, low fire, 45 psi.
 
 ```
 src/Simulation/   Pure C# physics: boiler, air brake, locomotive, levers, track profile. No Godot types.
-src/Render/       PS1 pipeline (low-res viewport + dither) and material/mesh helpers
+src/Render/       PS1 pipeline (low-res viewport + dither), material/mesh helpers, model loader
 src/World/        Track and scenery around the train
 src/Train/        Locomotive and tender body, smoke
 src/Cab/          Levers, gauges, cab interior, mouse input
@@ -49,8 +49,24 @@ src/Audio/        Procedural placeholder sounds (chuffs, rail joints, fire, safe
 src/UI/           Dev HUD
 src/Tools/        AutoShot: scripted screenshot run
 shaders/          PS1 surface shader and post-process
+assets/           Third-party CC0 models (Quaternius)
 tests/            xUnit tests for src/Simulation
 ```
+
+## Windows build
+
+Every push to `main` runs the tests and exports a Windows build on GitHub Actions
+(`.github/workflows/build.yml`). Download it from the run's **Artifacts** ("LastTrain-windows").
+
+To export locally (needs the 4.7.2 .NET export templates installed):
+
+```bash
+godot --headless --path . --export-release "Windows Desktop" build/windows/LastTrain.exe
+```
+
+## Credits
+
+- Nature models: [Quaternius](https://quaternius.com) "Ultimate Nature" pack, CC0 (`assets/quaternius/`).
 
 ## Tests
 
