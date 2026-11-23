@@ -30,6 +30,70 @@ Think *Derail Valley* meets *Oregon Trail* meets *Silent Hill*.
 | Cab | First-person, clickable levers that **latch** where released (no holding) |
 | Modes | On the train and on foot: foraging, hunting, fishing, camping, scavenging |
 | Crew | Single operator; optional recruits that act as modifiers (fireman, mechanic, scout) |
+| Run shape | Long expedition (10+ hours) with saves. New seed per run |
+| People | Rare survivors. Mostly empty towns; no working economy |
+| Survival | Light: hunger, cold, rest. No thirst/illness micromanagement |
+| Platform | PC (Windows/Linux), Steam Deck friendly (assumed) |
+
+## Core loop
+
+> Drive → resources run low or something breaks → choose a stop → leave the train (forage, hunt, fish,
+> scavenge, repair, camp) → return → push on into stranger territory.
+
+Two rhythms that make each other welcome:
+
+- **On the train:** tense and mechanical. Pressure, water, gradients, braking, reading the track ahead.
+- **Off the train:** slow and atmospheric. Exploring, gathering, repairing, camping.
+
+The longer-term loop is the journey itself: each region is stranger than the last, the train
+accumulates wagons, patches and scars, and the destination gets closer.
+
+## Survival (light)
+
+Player needs:
+
+- **Hunger.** Food from foraging, hunting, fishing, scavenged tins. Low hunger slows you and shakes your hands (aim, repairs).
+- **Cold.** The cab firebox, campfires and the passenger car keep you warm. Night and weather bite off the train.
+- **Rest.** Sleep at camp or in a bunk car. Sleeping is also when time passes and the world shifts.
+
+Train needs:
+
+- **Coal** (or wood in a pinch, burns worse), **water** (towers, rivers via a hand pump),
+  **oil** (lubrication, otherwise wear rises fast), **sand** (adhesion on wet or steep track), **parts**.
+
+Survival should create reasons to stop and decisions about *where*, not chores.
+
+## Failure and saving (proposal, not decided)
+
+- **Saving:** at camp, or when the train is stopped and secure. No saving mid-crisis.
+- **Player death:** reload the last save. Deaths come mostly from being off the line at night, falls, wildlife, exposure and wrong places.
+- **Soft failure is the real pressure:** stranded with a dead boiler, missing track ahead, out of coal far from a depot.
+  These should be recoverable, but costly (walk to find parts, burn wagons for fuel, backtrack).
+- **Boiler explosion** (low water over a hot firebox) is the one catastrophic mechanical failure. It should be well telegraphed.
+- Optional hardcore mode later: one save slot, deleted on death.
+
+## People
+
+Rare survivors: hermits at stations, a family hiding in a depot, a railwayman who won't leave his signal box.
+They can trade a little, give information (maps, warnings, rumours), or join as crew. Most towns are empty
+and recently abandoned, which is part of the mystery.
+
+## Navigation
+
+On a rail network, routing *is* gameplay.
+
+- Junctions with hand-thrown switches. You stop, get down and throw them.
+- Maps are found, bought or drawn. Unknown track is literally unknown.
+- Telegraph offices: timetables, line status, and messages that should not exist.
+- Dead ends: washed-out bridges, missing track, blocked tunnels. Repair, detour or backtrack.
+
+## Audio
+
+Half the experience in both a train sim and a horror game.
+
+- Chuff synced to speed and cut-off, boiler hiss, safety valve roar, injector sing, rail joints clacking.
+- Brakes, couplers and wagons creaking under load: the train should *sound* heavy.
+- Wrongness: wind that carries voices, silence where birds should be, a whistle answered from far away.
 
 ## Eldritch rules of thumb
 
@@ -38,6 +102,8 @@ Think *Derail Valley* meets *Oregon Trail* meets *Silent Hill*.
 - Corruption is shown, not metered: gauges drift, shadows linger in the cab, the track ahead changes.
 - Telegraph and radio are information channels *and* horror devices.
 - Salvage from wrong places may work better, worse, or both.
+- **Fog is a signal, not just a draw-distance crutch.** Clear regions show huge distant silhouettes
+  (cheap billboards) for awe; thick fog marks corrupted zones for dread.
 
 ## Scope control: build in slices
 
@@ -76,13 +142,27 @@ and reused (e.g. for AI or headless world simulation).
 
 - Render the 3D scene into a low-res `SubViewport` (about 320x240), upscale with nearest filtering, then post-process for colour quantisation and dithering.
 - Mesh shader: vertex snapping, unfiltered textures, vertex lighting, fog as draw distance.
-- Affine texture warping: Godot spatial shaders lack a no-perspective varying, so this needs a workaround. Revisit.
+- Affine texture warping: multiply UV by clip-space `w` in the vertex shader and divide in the fragment shader (standard trick). Keep it subtle on track and rails.
 - Levers: click-and-drag, value latched on release. Throttle is continuous; brake and reverser have detents. Air-brake lag is modelled.
 - Simulation tuning numbers will be guesses at first, not data.
 - Dev HUD before 3D gauges.
 - A floating origin will be needed for long journeys.
 
+### Slice 1 is done when
+
+- [ ] You can start from cold standing: fire up, build pressure, set reverser, open regulator, move off.
+- [ ] Pressure and water respond believably; long cut-off at speed drains the boiler, short cut-off is sustainable.
+- [ ] A gradient noticeably slows a heavy train.
+- [ ] Brakes have lag; you can stop on a marked spot with practice.
+- [ ] Levers latch, have detents where expected, and feel good to drag.
+- [ ] The PS1 look holds up in motion (no ugly track shimmer).
+- [ ] Tom drives it for ten minutes and wants to keep going.
+
 ## Open questions
+
+- What ends a run (failure proposal above needs a yes/no).
+- How long is a "region", and how many regions per expedition?
+- Can you add, drop and shunt wagons from slice 2 onward, or later?
 
 - Cab view: how much of the boiler backhead and window view do we want on screen at once?
 - Exact eldritch visual language (what does "wrong" look like in 320x240?).
