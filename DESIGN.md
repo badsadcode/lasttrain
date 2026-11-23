@@ -109,7 +109,7 @@ Half the experience in both a train sim and a horror game.
 
 If slices 1 and 2 are not fun, nothing else matters.
 
-1. **The Engine** — one locomotive, one straight track, PS1 look, working throttle/brake/boiler. *Does driving feel good?* **(next)**
+1. **The Engine** — one locomotive, one straight track, PS1 look, working throttle/brake/boiler. *Does driving feel good?* **(first playable built; needs Tom's hands on it)**
 2. **The Line** — procedural rail network and terrain carved around it. *Is travel the reward?*
 3. **The Stop** — on-foot mode, one town, scavenging.
 4. **The Breakdown** — component repair for a few parts.
@@ -123,16 +123,13 @@ If slices 1 and 2 are not fun, nothing else matters.
 
 Terrain-first generation produces unrealistic steep track; do not do it.
 
-## Proposed code layout (nothing written yet)
+## Code layout
+
+See README.md for the full folder list. The important split:
 
 ```
-project.godot / LastTrain.csproj
-scenes/                   Entry scene(s)
-shaders/                  PS1 surface shader + post-process (quantise/dither)
-src/Simulation/           Pure C#, NO Godot types. Testable on its own.
-src/Render/               Low-res viewport pipeline + material helpers
-src/World/                Track and scenery builders
-src/Cab/                  Clickable latched levers and cab rig
+src/Simulation/           Pure C#, NO Godot types. Testable on its own (tests/).
+everything else           Godot presentation: rendering, cab, world, audio, UI
 ```
 
 **Rule:** `src/Simulation` must never reference `Godot`. Physics lives there so it can be unit tested
@@ -143,6 +140,9 @@ and reused (e.g. for AI or headless world simulation).
 - Render the 3D scene into a low-res `SubViewport` (about 320x240), upscale with nearest filtering, then post-process for colour quantisation and dithering.
 - Mesh shader: vertex snapping, unfiltered textures, vertex lighting, fog as draw distance.
 - Affine texture warping: multiply UV by clip-space `w` in the vertex shader and divide in the fragment shader (standard trick). Keep it subtle on track and rails.
+- Cab view: the boiler blocks most of the forward view, as on the real thing. Hold E to lean out of the side window.
+- Steam model: tractive effort follows ideal expansion (work ~ c(1 + ln 1/c) for cut-off c, steam ~ c), so notching up at speed
+  is genuinely more efficient. Exhaust draught makes the fire respond to how hard the engine works.
 - Levers: click-and-drag, value latched on release. Throttle is continuous; brake and reverser have detents. Air-brake lag is modelled.
 - Simulation tuning numbers will be guesses at first, not data.
 - Dev HUD before 3D gauges.
