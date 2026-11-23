@@ -63,7 +63,7 @@ Train needs:
 
 Survival should create reasons to stop and decisions about *where*, not chores.
 
-## Failure and saving (proposal, not decided)
+## Failure and saving
 
 - **Saving:** at camp, or when the train is stopped and secure. No saving mid-crisis.
 - **Player death:** reload the last save. Deaths come mostly from being off the line at night, falls, wildlife, exposure and wrong places.
@@ -160,7 +160,6 @@ and reused (e.g. for AI or headless world simulation).
 
 ## Open questions
 
-- What ends a run (failure proposal above needs a yes/no).
 - How long is a "region", and how many regions per expedition?
 - Can you add, drop and shunt wagons from slice 2 onward, or later?
 
